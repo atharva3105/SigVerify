@@ -1,23 +1,3 @@
-# #CALCULATOR 
-# import streamlit as st
-
-# def main():
-#     st.title("Square Calculator")
-
-#     # User input
-#     number = st.number_input("Enter a number")
-
-#     # Calculate square
-#     square = number ** 2
-
-#     # Display result
-#     st.write(f"The square of {number} is {square}")
-
-# if __name__ == "__main__":
-#     main()
-
-
-
 import streamlit as st
 import cv2
 import numpy as np
@@ -48,6 +28,35 @@ from keras.regularizers import l2
 from keras.metrics import AUC,Precision,Recall,Accuracy
 from keras import optimizers
 
+from keras import backend as K
+
+def get_base_net(input_shape):
+  seq = Sequential()
+  seq.add(Conv2D(128, (11, 11),strides=(1, 1),activation='relu', name='conv1_1', input_shape= input_shape ))
+  seq.add(BatchNormalization(epsilon=1e-06, axis=1, momentum=0.9))
+  seq.add(MaxPooling2D((2,2), strides=(2, 2)))
+  seq.add(ZeroPadding2D((2, 2)))
+
+  seq.add(Conv2D(96, (5, 5), activation='relu', name='conv2_1', strides=(1, 1)))
+  seq.add(BatchNormalization(epsilon=1e-06,  axis=1, momentum=0.9))
+  seq.add(MaxPooling2D((2,2), strides=(2, 2)))
+  seq.add(ZeroPadding2D((1, 1)))
+
+
+  seq.add(Conv2D(96, (3, 3), activation='relu', name='conv3_1', strides=(1, 1)))
+  seq.add(ZeroPadding2D((1, 1)))
+
+  seq.add(Conv2D(64, (3, 3), activation='relu', name='conv3_2', strides=(1, 1)))
+  seq.add(MaxPooling2D((2,2), strides=(2, 2)))
+  seq.add(Dropout(0.3))# added extra
+
+  seq.add(Flatten(name='flatten'))
+  seq.add(Dense(512, kernel_regularizer=l2(0.0005), activation='relu'))
+  seq.add(Dropout(0.5))
+
+  seq.add(Dense(64, kernel_regularizer=l2(0.0005), activation='relu')) # softmax changed to relu
+
+  return seq
 
 
 def euclidean_distance(vects):
@@ -71,22 +80,42 @@ def accuracy(y_true, y_pred):
     return K.mean(K.equal(y_true, K.cast(y_pred < 0.5, y_true.dtype)))
 
 
+input_a = Input(shape=(155,220,3))
+input_b = Input(shape=(155,220,3))
+
+base_net = get_base_net((155,220,3))
+processed_a = base_net(input_a)
+processed_b = base_net(input_b)
+
+distance = Lambda(euclidean_distance,output_shape=eucl_dist_output_shape)([processed_a, processed_b])
+model = Model([input_a, input_b], distance)
+
+# print(model.summary(expand_nested=True))
+
+
 # Load the pre-trained model
-mod = load_model('/Users/adityadubey/Desktop/SigVerify/tryout1.keras', custom_objects={'contrastive_loss': contrastive_loss})
+# mod = load_model('/Users/adityadubey/Desktop/SigVerify/tryout1.keras', custom_objects={'contrastive_loss': contrastive_loss})
+# weights = load_model('/Users/adityadubey/Desktop/SigVerify/tryout1.keras', custom_objects={'contrastive_loss': contrastive_loss}, safe_mode=False)
 
-# Define the function to preprocess the images
-def preprocess_image(image):
-    # Resize the image
-    image = cv2.resize(image, (220, 155))
-    # Invert the image (assuming it's a signature)
-    image = cv2.bitwise_not(image)
-    # Normalize the pixel values
-    image = image / 255.0
-    # Add a batch dimension
-    image = np.expand_dims(image, axis=0)
-    return image
+# mod=get_base_net((155,220,3))
+model.load_weights('/Users/adityadubey/Desktop/SigVerify/tryout1.keras')
 
-# Define the Streamlit app
+
+def Predict(model, path1, path2):
+  im_1 = path1
+  im_2 = path2
+  im_1 = cv2.resize(im_1,(220,155))
+  im_2 = cv2.resize(im_2,(220,155))
+  im_1 = cv2.bitwise_not(im_1)
+  im_2 = cv2.bitwise_not(im_2)
+  im_1 = im_1/255
+  im_2 = im_2/255
+  im_1 = np.expand_dims(im_1,axis=0)
+  im_2 = np.expand_dims(im_2,axis=0)
+  y_pred = model.predict([im_1,im_2])
+
+  return y_pred[0][0]
+
 def main():
     st.title("Signature Verification App")
     st.write("Upload two signature images and get the prediction result.")
@@ -101,16 +130,15 @@ def main():
             st.warning("Please upload both images.")
         else:
             # Read and preprocess the images
-            image_1 = cv2.imdecode(np.fromstring(uploaded_file_1.read(), np.uint8), cv2.IMREAD_GRAYSCALE)
-            image_2 = cv2.imdecode(np.fromstring(uploaded_file_2.read(), np.uint8), cv2.IMREAD_GRAYSCALE)
-            preprocessed_image_1 = preprocess_image(image_1)
-            preprocessed_image_2 = preprocess_image(image_2)
+            image_1 = cv2.imdecode(np.fromstring(uploaded_file_1.read(), np.uint8), cv2.IMREAD_COLOR)
+            image_2 = cv2.imdecode(np.fromstring(uploaded_file_2.read(), np.uint8), cv2.IMREAD_COLOR)
 
             # Make prediction
-            prediction = mod.predict([preprocessed_image_1, preprocessed_image_2])
+            prediction = Predict(model,image_1,image_2)
 
             # Display prediction result
             st.write("Prediction:", prediction)
+            
 
 if __name__ == "__main__":
     main()
