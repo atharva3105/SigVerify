@@ -23,7 +23,32 @@ import cv2
 import numpy as np
 from keras.models import load_model
 
+import tensorflow as tf
+import numpy as np
+np.random.seed(0)
+import cv2
+import os
+import pandas as pd
+import cv2
+from natsort import natsorted, ns
+from sklearn.model_selection import train_test_split
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
+from tensorflow.keras.preprocessing import image
+from keras import models
+from keras.layers import Conv2D, MaxPooling2D, Dense, Activation, BatchNormalization, Input, Dropout, Flatten
+from keras.models import Model
+from keras.callbacks import ModelCheckpoint, TensorBoard
+from keras.layers import Dense, Dropout, Input, Lambda, Flatten, Convolution2D, MaxPooling2D, ZeroPadding2D
+from keras.preprocessing import image
 from keras import backend as K
+from keras.models import Sequential, Model
+from keras.optimizers import SGD, RMSprop, Adadelta
+from keras.layers import BatchNormalization
+from keras.regularizers import l2
+from keras.metrics import AUC,Precision,Recall,Accuracy
+from keras import optimizers
+
+
 
 def euclidean_distance(vects):
     x, y = vects
@@ -47,7 +72,7 @@ def accuracy(y_true, y_pred):
 
 
 # Load the pre-trained model
-mod = load_model('/Users/adityadubey/Desktop/SigVerify/model_2.h5', custom_objects={'contrastive_loss': contrastive_loss})
+mod = load_model('/Users/adityadubey/Desktop/SigVerify/tryout1.keras', custom_objects={'contrastive_loss': contrastive_loss})
 
 # Define the function to preprocess the images
 def preprocess_image(image):
