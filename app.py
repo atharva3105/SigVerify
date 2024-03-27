@@ -137,7 +137,11 @@ def main():
             prediction = Predict(model,image_1,image_2)
 
             # Display prediction result
-            st.write("Prediction:", prediction)
+            # st.write("Prediction:", prediction)
+            if prediction < 0.5:
+                st.success("Prediction: {}".format(prediction))
+            else:
+                st.error("Prediction: {}".format(prediction))
             
 
 if __name__ == "__main__":
