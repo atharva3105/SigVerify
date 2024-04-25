@@ -98,7 +98,7 @@ model = Model([input_a, input_b], distance)
 # weights = load_model('/Users/adityadubey/Desktop/SigVerify/tryout1.keras', custom_objects={'contrastive_loss': contrastive_loss}, safe_mode=False)
 
 # mod=get_base_net((155,220,3))
-model.load_weights('tryout1.keras')
+model.load_weights('/Users/adityadubey/Desktop/SigVerify/tryout1.keras')
 
 
 def Predict(model, path1, path2):
@@ -139,9 +139,11 @@ def main():
             # Display prediction result
             # st.write("Prediction:", prediction)
             if prediction < 0.5:
-                st.success("Prediction: {}".format(prediction))
+                # st.success("Prediction: {}".format(prediction))
+                st.success("Genuine")
             else:
-                st.error("Prediction: {}".format(prediction))
+                # st.error("Prediction: {}".format(prediction))
+                st.error("Forged")
             
 
 if __name__ == "__main__":
